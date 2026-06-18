@@ -85,6 +85,13 @@
 #endif
 #endif
 
+#if defined(__riscv)
+#define LIBDIVIDE_RISCV
+#if defined(__riscv_xlen) && __riscv_xlen == 64
+#define LIBDIVIDE_RISCV64
+#endif
+#endif
+
 #if defined(__x86_64__) || defined(_M_X64)
 #define LIBDIVIDE_X86_64
 #endif
