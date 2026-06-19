@@ -48,23 +48,6 @@ set(LIBDIVIDE_NEON AUTO CACHE STRING "Enable ARM NEON vector instructions")
 set(LIBDIVIDE_SVE  AUTO CACHE STRING  "Enable ARM SVE vector instructions")
 set(LIBDIVIDE_SVE2 AUTO CACHE STRING  "Enable ARM SVE2 vector instructions")
 
-string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" LIBDIVIDE_PROCESSOR_LOWER)
-if (LIBDIVIDE_PROCESSOR_LOWER MATCHES "^riscv")
-    foreach(LIBDIVIDE_VECTOR_OPTION
-            LIBDIVIDE_SSE2
-            LIBDIVIDE_AVX2
-            LIBDIVIDE_AVX512
-            LIBDIVIDE_NEON
-            LIBDIVIDE_SVE
-            LIBDIVIDE_SVE2)
-        if (${LIBDIVIDE_VECTOR_OPTION} STREQUAL "AUTO")
-            set(${LIBDIVIDE_VECTOR_OPTION} OFF)
-        endif()
-    endforeach()
-    message(STATUS
-        "RISC-V target detected; libdivide will use the scalar path unless vector macros are enabled manually")
-endif()
-
 # By default enable release mode ###############################
 
 if(NOT CMAKE_VERSION VERSION_LESS 3.9)
@@ -250,14 +233,18 @@ endif()
 if (NOT LIBDIVIDE_AVX512 STREQUAL "AUTO")
     set(LIBDIVIDE_AVX512_ENABLED "${LIBDIVIDE_AVX512}")
 else()
-    check_cxx_source_runs("
+    set(AVX512_TEST "
                 #include <immintrin.h>
                 int main()
                 {
                     __m512i a = _mm512_setzero_si512();
                     return *(int *)&a;
-                }"
-                LIBDIVIDE_AVX512_ENABLED)
+                }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${AVX512_TEST}" LIBDIVIDE_AVX512_ENABLED)
+    else()
+        check_cxx_source_runs("${AVX512_TEST}" LIBDIVIDE_AVX512_ENABLED)
+    endif()
 endif()
 
 # AVX2
@@ -265,28 +252,36 @@ if (NOT LIBDIVIDE_AVX2 STREQUAL "AUTO")
     set(LIBDIVIDE_AVX2_ENABLED "${LIBDIVIDE_AVX2}")
 else()
     # Need to use an AVX2 insn like srai, not just AVX.
-    check_cxx_source_runs("
+    set(AVX2_TEST "
                 #include <immintrin.h>
                 int main()
                 {
                     __m256i a = _mm256_srai_epi32(_mm256_setzero_si256(), 3);
                     return *(int *)&a;
-                }"
-                LIBDIVIDE_AVX2_ENABLED)
+                }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${AVX2_TEST}" LIBDIVIDE_AVX2_ENABLED)
+    else()
+        check_cxx_source_runs("${AVX2_TEST}" LIBDIVIDE_AVX2_ENABLED)
+    endif()
 endif()
 
 # SSE2
 if (NOT LIBDIVIDE_SSE2 STREQUAL "AUTO")
     set(LIBDIVIDE_SSE2_ENABLED "${LIBDIVIDE_SSE2}")
 else()
-    check_cxx_source_runs("
+    set(SSE2_TEST "
                 #include <emmintrin.h>
                 int main()
                 {
                     __m128i a = _mm_setzero_si128();
                     return *(int *)&a;
-                }"
-                LIBDIVIDE_SSE2_ENABLED)
+                }")
+    if (CMAKE_CROSSCOMPILING)
+        check_cxx_source_compiles("${SSE2_TEST}" LIBDIVIDE_SSE2_ENABLED)
+    else()
+        check_cxx_source_runs("${SSE2_TEST}" LIBDIVIDE_SSE2_ENABLED)
+    endif()
 endif()
 cmake_pop_check_state()
 
