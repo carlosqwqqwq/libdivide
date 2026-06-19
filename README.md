@@ -132,10 +132,6 @@ Note that you need to define one of macros below to enable vector division:
 * ```LIBDIVIDE_SVE```
 * ```LIBDIVIDE_SVE2```
 
-On `riscv64`, libdivide currently uses the scalar path by default. The
-upstream CMake configuration should not auto-enable any x86, NEON, or SVE
-vector backend for a RISC-V target unless you opt into one manually.
-
 ## Performance Tips
 
 * If possible use unsigned integer types because libdivide's unsigned division is measurably

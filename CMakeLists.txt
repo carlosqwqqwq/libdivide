@@ -50,7 +50,17 @@ set(LIBDIVIDE_SVE2 AUTO CACHE STRING  "Enable ARM SVE2 vector instructions")
 
 string(TOLOWER "${CMAKE_SYSTEM_PROCESSOR}" LIBDIVIDE_PROCESSOR_LOWER)
 if (LIBDIVIDE_PROCESSOR_LOWER MATCHES "^riscv")
-    set(LIBDIVIDE_TARGET_IS_RISCV TRUE)
+    foreach(LIBDIVIDE_VECTOR_OPTION
+            LIBDIVIDE_SSE2
+            LIBDIVIDE_AVX2
+            LIBDIVIDE_AVX512
+            LIBDIVIDE_NEON
+            LIBDIVIDE_SVE
+            LIBDIVIDE_SVE2)
+        if (${LIBDIVIDE_VECTOR_OPTION} STREQUAL "AUTO")
+            set(${LIBDIVIDE_VECTOR_OPTION} OFF)
+        endif()
+    endforeach()
     message(STATUS
         "RISC-V target detected; libdivide will use the scalar path unless vector macros are enabled manually")
 endif()
@@ -175,44 +185,6 @@ cmake_push_check_state()
 # Need to convert from list to space-separated string.
 string(REPLACE ";" " " CMAKE_REQUIRED_FLAGS "${LIBDIVIDE_FLAGS}")
 
-if (LIBDIVIDE_TARGET_IS_RISCV)
-    if (LIBDIVIDE_NEON STREQUAL "AUTO")
-        set(LIBDIVIDE_NEON_ENABLED FALSE)
-    else()
-        set(LIBDIVIDE_NEON_ENABLED "${LIBDIVIDE_NEON}")
-    endif()
-
-    if (LIBDIVIDE_SVE STREQUAL "AUTO")
-        set(LIBDIVIDE_SVE_ENABLED FALSE)
-    else()
-        set(LIBDIVIDE_SVE_ENABLED "${LIBDIVIDE_SVE}")
-    endif()
-
-    if (LIBDIVIDE_SVE2 STREQUAL "AUTO")
-        set(LIBDIVIDE_SVE2_ENABLED FALSE)
-    else()
-        set(LIBDIVIDE_SVE2_ENABLED "${LIBDIVIDE_SVE2}")
-    endif()
-
-    if (LIBDIVIDE_AVX512 STREQUAL "AUTO")
-        set(LIBDIVIDE_AVX512_ENABLED FALSE)
-    else()
-        set(LIBDIVIDE_AVX512_ENABLED "${LIBDIVIDE_AVX512}")
-    endif()
-
-    if (LIBDIVIDE_AVX2 STREQUAL "AUTO")
-        set(LIBDIVIDE_AVX2_ENABLED FALSE)
-    else()
-        set(LIBDIVIDE_AVX2_ENABLED "${LIBDIVIDE_AVX2}")
-    endif()
-
-    if (LIBDIVIDE_SSE2 STREQUAL "AUTO")
-        set(LIBDIVIDE_SSE2_ENABLED FALSE)
-    else()
-        set(LIBDIVIDE_SSE2_ENABLED "${LIBDIVIDE_SSE2}")
-    endif()
-else()
-
 # NEON
 if (NOT LIBDIVIDE_NEON STREQUAL "AUTO")
     set(LIBDIVIDE_NEON_ENABLED "${LIBDIVIDE_NEON}")
@@ -315,7 +287,6 @@ else()
                     return *(int *)&a;
                 }"
                 LIBDIVIDE_SSE2_ENABLED)
-endif()
 endif()
 cmake_pop_check_state()
 
